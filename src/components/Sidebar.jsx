@@ -1,4 +1,5 @@
 import React from "react";
+import RobotControls from "./RobotControls";
 
 export default function Sidebar({
   houseList,
@@ -17,7 +18,8 @@ export default function Sidebar({
   onSaveAll,
   onSaveFloor,
   onReset,
-  mapUploaded,
+  onRunScenario,
+  mapUploaded
 }) {
   return (
     <aside className="sidebar">
@@ -121,13 +123,21 @@ export default function Sidebar({
           Save Floor Layout
         </button>
 
-        {/* <button className="btn ghost" onClick={onSaveAll}>
-          Export All Data
-        </button> */}
+        <button
+          className="btn primary"
+          disabled={!selectedHouse || !selectedFloor || !selectedScenario}
+          onClick={onRunScenario}
+        >
+          Run Scenario
+        </button>
+
 
         <button className="btn ghost" onClick={onReset}>
           Reset
         </button>
+        <RobotControls
+    />
+
       </div>
 
       <div className="sidebar-footer muted small">

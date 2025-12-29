@@ -176,3 +176,134 @@ body, html, #root { height: 100%; margin: 0; background: var(--bg); color: #1118
   font-size: 12px;
   opacity: 0.7;
 }
+.robot-controls {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.robot-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 4px;
+}
+
+/* D-pad */
+.dpad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.dpad button {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.dpad button:hover {
+  background: #2563eb;
+  transform: scale(1.08);
+}
+
+.mid-row {
+  display: flex;
+  gap: 8px;
+}
+
+.center {
+  background: #ef4444 !important;
+  font-weight: bold;
+}
+
+.center:hover {
+  background: #dc2626 !important;
+}
+
+/* Go-to controls */
+.goto-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.goto-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+}
+
+.goto-input {
+  width: 42px;            /* small compact box */
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.12);
+  color: white;
+  font-size: 13px;
+  text-align: center;
+}
+
+.goto-input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+.go-btn {
+  background: rgba(255,255,255,0.15)
+;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.go-btn:hover {
+  background: #2563eb;
+}
+
+.cancel-btn {
+  background: rgba(255,255,255,0.18);
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.cancel-btn:hover {
+  background: rgba(255,255,255,0.28);
+}
+
+.cancel-btn {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: none;
+  padding: 0 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+.upload-screen {
+  background:
+    radial-gradient(700px 350px at 50% 20%, rgba(37,99,235,0.10), transparent 60%),
+    linear-gradient(180deg, #f1f5f9, #e5e7eb);
+}

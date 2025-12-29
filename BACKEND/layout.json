@@ -1,0 +1,19 @@
+{
+  "floorMap": "a8cccec7-24e1-4472-82f0-419bf74b695a",
+  "house": "h1",
+  "floor": "f1",
+  "scenario": {
+    "name": "s1",
+    "Coordinate_order": []
+  },
+  "coordinates": {
+    "1": {
+      "x": 284,
+      "y": 248
+    },
+    "2": {
+      "x": 520,
+      "y": 201
+    }
+  }
+}

@@ -9,7 +9,10 @@ import AddScenarioModal from "./components/AddScenarioModal";
 import RunScenarioModal from "./components/RunScenarioModal";
 import { layoutAPI } from "./services/layoutAPI";
 import "./styles/upload.css";
-
+import "./styles/RobotConfig.css";
+import RobotConfigBar from "./components/RobotConfigBar";
+import "./styles/RobotConfig.css";
+import GlobalHeader from "./components/GlobalHeader";
 const SAMPLE_PATH = "/50T.png";
 
 export default function App() {
@@ -27,6 +30,8 @@ export default function App() {
   const [showAddScenario, setShowAddScenario] = useState(false);
   const [showRunModal, setShowRunModal] = useState(false);
 
+  const [status, setStatus] = useState("");
+  
 
   useEffect(() => {
     layoutAPI.get().then(d => setData(d || { houses: {} }));
@@ -91,43 +96,42 @@ export default function App() {
   setShowRunModal(true);
 };
 
-const handleRunSubmit = async (params) => {
+const handleRunSubmit = async ({ values, iterations }) => {
   const updated = structuredClone(data);
   const floor = updated.houses[selectedHouse].floors[selectedFloor];
 
-  Object.entries(params).forEach(([id, { duration, angle }]) => {
+  Object.entries(values).forEach(([id, { duration, angle }]) => {
     if (!floor.coordinates[id]) return;
 
-    if (duration !== "") floor.coordinates[id].duration = Number(duration);
+    if (duration !== "") {
+      floor.coordinates[id].duration = Number(duration);
+    }
 
-   if (angle !== "") {
-  if (Array.isArray(angle)) {
-    floor.coordinates[id].angle = angle.map(Number);
-  } else if (typeof angle === "string") {
-    floor.coordinates[id].angle = angle
-      .split(",")
-      .map(a => a.trim())
-      .filter(a => a.length)
-      .map(Number);
-  }
-}
-
+    if (angle !== "") {
+      if (Array.isArray(angle)) {
+        floor.coordinates[id].angle = angle.map(Number);
+      } else if (typeof angle === "string") {
+        floor.coordinates[id].angle = angle
+          .split(",")
+          .map(a => a.trim())
+          .filter(a => a.length)
+          .map(Number);
+      }
+    }
   });
 
   setData(updated);
   setShowRunModal(false);
 
-  // Persist to backend
   await layoutAPI.save(updated);
 
-  console.log(" Running Scenario:", {
-    house: selectedHouse,
-    floor: selectedFloor,
-    floorMap: floor.floorMap,
-    coordinates: floor.coordinates,
-    scenario: floor.scenarios[selectedScenario]
+  console.log("Running Scenario:", {
+    order: floor.scenarios[selectedScenario]?.Coordinate_order,
+    iterations,
+    coordinates: floor.coordinates
   });
 };
+
 
 
 
@@ -166,8 +170,17 @@ const handleRunSubmit = async (params) => {
 
   return (
     <div className="app-root">
-
-      <Sidebar
+       <GlobalHeader
+    onStop={() => fetch("http://localhost:8000/robot/nav/cancel", { method: "POST" })}
+    onCharge={() =>
+      fetch("http://localhost:8000/robot/charge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: 0, point: "Charging pile" })
+      })
+    }
+  />
+      <Sidebar     
         houseList={houseList}
         floorList={floorList}
         scenarioList={scenarioList}
@@ -185,10 +198,9 @@ const handleRunSubmit = async (params) => {
         onReset={() => window.location.reload()}
         mapUploaded={!!mapURL}
         onRunScenario={handleRunScenario}
+        status={status}
       />
-
-      {!mapURL && <UploadScreen onUpload={handleUpload} samplePath={SAMPLE_PATH} />}
-
+      {!mapURL && <UploadScreen onUpload={handleUpload} samplePath={SAMPLE_PATH} status={status} setStatus={setStatus} />}
       {mapURL && (
   <FloorMapCanvas
     mapURL={mapURL}
@@ -208,9 +220,10 @@ const handleRunSubmit = async (params) => {
     onPrepareCoordinatePosition={setPendingPos}
     onOpenAddCoordinate={() => setShowCoordModal(true)}  
   />
+  
 )}
 {showCoordModal && (
-  <CoordinateModal
+  <CoordinateModal status={status}
     onSubmit={(coordId) => {
       const updated = structuredClone(data);
       updated.houses[selectedHouse].floors[selectedFloor].coordinates[coordId] = pendingPos;

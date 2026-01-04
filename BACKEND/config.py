@@ -1,5 +1,5 @@
 # config.py
 
-ROBOT_HOST = "192.168.204.101"  
-BASE_URL = f"http://{ROBOT_HOST}"
+ROBOT_HOST = None
+BASE_URL = None
 TIMEOUT = 5

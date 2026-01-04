@@ -19,8 +19,10 @@ export default function Sidebar({
   onSaveFloor,
   onReset,
   onRunScenario,
-  mapUploaded
+  mapUploaded,
+  status,
 }) {
+  const disabled = status !== "connected";
   return (
     <aside className="sidebar">
       <div>
@@ -35,6 +37,7 @@ export default function Sidebar({
           <select
             value={selectedHouse || ""}
             onChange={(e) => onSelectHouse(e.target.value || null)}
+            disabled={disabled}
           >
             <option value="">-- Select House --</option>
             {houseList.map((h) => (
@@ -44,7 +47,7 @@ export default function Sidebar({
             ))}
           </select>
 
-          <button className="circle-add-btn" onClick={onAddHouse}>
+          <button className="circle-add-btn" onClick={onAddHouse} disabled={disabled}>
             +
           </button>
         </div>

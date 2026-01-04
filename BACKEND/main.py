@@ -2,13 +2,15 @@ from fastapi import FastAPI, UploadFile, File, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from schemas import Pose, NavByName, Speed, MaxSpeed, Charge
-from robot_client import get, post
+from schemas import Pose, NavByName, Speed, MaxSpeed, Charge, RobotConfig
+from robot_client import get, post, set_robot_host
 from storage import load_data, save_data, merge_layout
 
 from pathlib import Path
 import shutil
 import uuid
+from fastapi import HTTPException
+import requests
 
 
 origins = ["*"]
@@ -38,6 +40,27 @@ def update_layout(data: dict = Body(...)):
     merge_layout(data)
     return {"status": "ok"}
 
+@app.post("/robot/config")
+def set_robot(cfg: RobotConfig):
+    set_robot_host(cfg.ip)
+    return {"status": "ok", "ip": cfg.ip}
+
+# @app.post("/robot/config")
+# def set_robot(cfg: RobotConfig):
+#     try:
+#         # Try setting the robot IP
+#         set_robot_host(cfg.ip)
+
+#         # Test connectivity 
+#         r = requests.get(f"http://{cfg.ip}/reeman/hostname", timeout=3)
+#         r.raise_for_status()
+
+#         return {"status": "ok", "ip": cfg.ip}
+
+#     except requests.exceptions.RequestException:
+#         # Reset robot host if unreachable
+#         set_robot_host(None)
+#         raise HTTPException(status_code=400, detail="Robot not reachable at given IP")
 
 @app.post("/layout/upload_map")
 async def upload_map(file: UploadFile = File(...)):
@@ -102,10 +125,21 @@ def charge(data: Charge):
 @app.get("/robot/map/current")
 def current_map():
     return get("/reeman/current_map")
-
 @app.get("/robot/map/list")
 def map_list():
-    return get("/reeman/history_map")
+    try:
+        return get("/reeman/history_map")
+
+    except requests.exceptions.RequestException:
+        # Robot unreachable → return mock data
+        return {
+            "maps": [
+                {"name": "mock_map_1", "alias": "Office Map"},
+                {"name": "mock_map_2", "alias": "Warehouse Map"},
+                {"name": "mock_map_3", "alias": "Test Environment"}
+            ],
+            "mock": True
+        }
 
 @app.post("/robot/map/save")
 def save_map():

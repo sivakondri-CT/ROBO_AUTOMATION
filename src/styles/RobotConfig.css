@@ -1,0 +1,80 @@
+.robot-config-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.robot-config-bar input {
+  width: 180px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+.robot-config-bar button {
+  padding: 6px 12px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.status.connected { color: #16a34a; }
+.status.failed { color: #dc2626; }
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* STOP */
+.icon-btn.stop {
+  background-color: #fee2e2;      /* light red */
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.icon-btn.stop:hover {
+  background-color: #fecaca;
+}
+
+.icon-btn.stop:active {
+  background-color: #fca5a5;
+  transform: translateY(1px);
+}
+
+/* CHARGE */
+.icon-btn.charge {
+  background-color: #dcfce7;      /* light green */
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.icon-btn.charge:hover {
+  background-color: #bbf7d0;
+}
+
+.icon-btn.charge:active {
+  background-color: #86efac;
+  transform: translateY(1px);
+}
+
+/* Disabled state */
+.icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}

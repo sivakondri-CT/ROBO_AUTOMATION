@@ -11,6 +11,8 @@ export default function RunScenarioModal({ order, coordinates, onSubmit, onClose
     }, {})
   );
 
+  const [iterations, setIterations] = useState(1);
+
   const handleChange = (id, field, val) => {
     setValues(v => ({
       ...v,
@@ -19,33 +21,53 @@ export default function RunScenarioModal({ order, coordinates, onSubmit, onClose
   };
 
   const handleRun = () => {
-    onSubmit(values);
+    onSubmit({ values, iterations });
   };
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" onClick={e => e.stopPropagation()}>
-        <h3>Scenario Parameters</h3>
+      <div className="modal-card wide" onClick={e => e.stopPropagation()}>
+        <h3>Run Scenario</h3>
 
-        {order.map(id => (
-          <div key={id} className="param-row">
-            <span>Point {id}</span>
-            <input
-              type="number"
-              placeholder="Duration (M)"
-              value={values[id].duration}
-              onChange={e => handleChange(id, "duration", e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Angles (e.g. 0,45,90)"
-              value={values[id].angle}
-              onChange={e => handleChange(id, "angle", e.target.value)}
-            />
-          </div>
-        ))}
+        <div className="param-grid">
+          <div className="param-header">Point</div>
+          <div className="param-header">Duration (min)</div>
+          <div className="param-header">Angles (°)</div>
 
-        <div className="modal-actions">
+          {order.map(id => (
+            <React.Fragment key={id}>
+              <div className="param-cell">Point {id}</div>
+
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={values[id].duration}
+                onChange={e => handleChange(id, "duration", e.target.value)}
+              />
+
+              <input
+                type="text"
+                placeholder="0,45,90"
+                value={values[id].angle}
+                onChange={e => handleChange(id, "angle", e.target.value)}
+              />
+            </React.Fragment>
+          ))}
+        </div>
+
+        <div className="iteration-row">
+          <label>Iterations</label>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={iterations}
+            onChange={e => setIterations(Number(e.target.value))}
+          />
+        </div>
+
+        <div className="modal-actions1">
           <button className="btn primary" onClick={handleRun}>Run</button>
           <button className="btn ghost" onClick={onClose}>Cancel</button>
         </div>

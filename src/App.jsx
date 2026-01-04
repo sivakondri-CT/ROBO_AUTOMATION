@@ -10,7 +10,7 @@ import RunScenarioModal from "./components/RunScenarioModal";
 import { layoutAPI } from "./services/layoutAPI";
 import "./styles/upload.css";
 import "./styles/RobotConfig.css";
-import RobotConfigBar from "./components/RobotConfigBar";
+// import RobotConfigBar from "./components/RobotConfigBar";
 import "./styles/RobotConfig.css";
 import GlobalHeader from "./components/GlobalHeader";
 const SAMPLE_PATH = "/50T.png";

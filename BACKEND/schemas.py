@@ -20,3 +20,5 @@ class MaxSpeed(BaseModel):
 class Charge(BaseModel):
     type: int
     point: str | None = None
+class RobotConfig(BaseModel):
+    ip: str

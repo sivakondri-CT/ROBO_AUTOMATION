@@ -16,7 +16,7 @@ def get(path: str):
     r.raise_for_status()
     return r.json()
 
-def post(path: str, body: dict | None = None):
+def post(path: str, body: dict ):
     _check_config()
     r = requests.post(f"{config.BASE_URL}{path}", json=body or {}, timeout=config.TIMEOUT)
     r.raise_for_status()

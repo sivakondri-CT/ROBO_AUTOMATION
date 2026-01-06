@@ -11,8 +11,9 @@ import shutil
 import uuid
 from fastapi import HTTPException
 import requests
+import config
 
-
+from tasks import run_robo_task
 origins = ["*"]
 
 app = FastAPI(title="SLAM Robot Backend")
@@ -148,3 +149,13 @@ def save_map():
 @app.post("/robot/map/apply")
 def apply_map(name: dict):
     return post("/cmd/apply_map", name)
+
+@app.post("/run-robo")
+def run_robo_endpoint(coordinate_data:dict, robot_ip: str = "192.168.200.153"):
+    args = {
+        "coordinate_data": coordinate_data,
+        "robot_ip": robot_ip
+    }
+
+    task = run_robo_task.delay("robo_control.py", args)
+    return {"task_id": task.id, "status": "started"}

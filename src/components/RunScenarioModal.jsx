@@ -20,7 +20,27 @@ export default function RunScenarioModal({ order, coordinates, onSubmit, onClose
     }));
   };
 
-  const handleRun = () => {
+  const handleRun = async () => {
+    console.log("Order:", order);
+    console.log("Values:", JSON.stringify(values, null, 2));
+    try {
+      const response = await fetch("http://localhost:8000/run-robo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          coordinate_data: values,
+          iterations:iterations,
+          order:order,
+        })
+      });
+
+      const data = await response.json();
+      console.log("Task started:", data);
+      alert(`Task started! ID: ${data.task_id}`);
+    } catch (err) {
+      console.error("Error starting task:", err);
+      alert("Failed to start task");
+    }
     onSubmit({ values, iterations });
   };
 

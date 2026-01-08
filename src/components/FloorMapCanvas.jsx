@@ -13,7 +13,6 @@ export default function FloorMapCanvas({
 }) {
   const containerRef = useRef(null);
   const [rect, setRect] = useState(null);
-
   useEffect(() => {
     const update = () => {
       if (!containerRef.current) return;
@@ -53,7 +52,6 @@ export default function FloorMapCanvas({
 
     onOpenAddCoordinate();
   };
-
   useEffect(() => {
     if (!rect) return;
     Object.entries(coordinates).forEach(([id, pos]) => {

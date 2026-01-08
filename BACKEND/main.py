@@ -42,6 +42,46 @@ def update_layout(data: dict = Body(...)):
     merge_layout(data)
     return {"status": "ok"}
 
+# @app.get("/reeman/history_map")
+# def get_history_maps():
+#     return {
+#         "maps": ["Office", "Warehouse", "Lab", "Floor1"]
+#     }
+
+@app.get("/reeman/history_map")
+def history_map():
+    data = get("/reeman/history_map")  
+
+    maps = []
+    for m in data.get("maps", []):
+        alias = m.get("alias")
+        name = m.get("name")
+        if alias:
+            maps.append({
+                "id": name,
+                "alias": alias
+            })
+
+    return {"maps": maps}
+
+@app.post("/cmd/apply_map")
+def apply_map(payload: dict):
+    try:
+        print("Apply map called:", payload)
+
+        resp = post("/cmd/apply_map", payload)
+
+        # If robot_client.post already raises on error, this line won't be reached on failure
+        return {
+            "status": "ok",
+            "robot_response": resp
+        }
+
+    except Exception as e:
+        print("Apply map failed:", str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to apply map: {str(e)}")
+
+
 @app.post("/robot/config")
 def set_robot(cfg: RobotConfig):
     set_robot_host(cfg.ip)

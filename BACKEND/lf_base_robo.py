@@ -78,7 +78,7 @@ class RobotClass:
         except Exception:
             return False
 
-        if nav_status.get("status") == "stopped":
+        if nav_status.get("status") == "Stopped":
             logging.info("Test stopped by user")
             return True
 
@@ -115,9 +115,6 @@ class RobotClass:
                     logging.info("Battery low ({}%). Pausing test until fully charged...".format(battery))
                     requests.post(move_url, json={"point": self.charge_point_name})
                     if self.nav_data_path:
-                        if not os.path.exists(self.nav_data_path):
-                            with open(self.nav_data_path, "w") as file:
-                                json.dump({}, file)
                         with open(self.nav_data_path, 'r') as x:
                             navdata = json.load(x)
                             navdata['status'] = "Running"
@@ -191,9 +188,6 @@ class RobotClass:
         status_url = 'http://' + self.robo_ip + '/reeman/nav_status'
         requests.post(moverobo_url, json={"point": coord})
         if self.nav_data_path:
-            if not os.path.exists(self.nav_data_path):
-                with open(self.nav_data_path, "w") as file:
-                    json.dump({}, file)
             with open(self.nav_data_path, 'r') as x:
                 navdata = json.load(x)
                 navdata['status'] = "Running"
@@ -237,9 +231,6 @@ class RobotClass:
 
         # Store the coordinate in navdatajson only from webui
         if self.nav_data_path:
-            if not os.path.exists(self.nav_data_path):
-                with open(self.nav_data_path, "w") as file:
-                    json.dump({}, file)
             with open(self.nav_data_path, 'r') as x:
                 navdata = json.load(x)
             if abort:
@@ -247,7 +238,7 @@ class RobotClass:
                 navdata['Canbee_location'] = ''
                 navdata['Canbee_angle'] = ''
             else:
-                navdata['status'] = "Stopped"
+                navdata['status'] = "Reached"
                 navdata['Canbee_location'] = coord
                 navdata['Canbee_angle'] = ''
                 navdata['current']=coord
@@ -277,10 +268,11 @@ class RobotClass:
 
         nav_pathurl = 'http://' + self.robo_ip + '/cmd/nav'
         pose_url = 'http://' + self.robo_ip + '/reeman/pose'
+        print("targetx",self.target_x,"targety",self.target_y)
         requests.post(nav_pathurl, json={"x": self.target_x, "y": self.target_y, "theta": angle})
         retries_for_theta = 0
         rotated = False
-        logging.info("Rotating to an angle {}".format(angle_degree))
+        print("Rotating to an angle {}".format(angle_degree))
         while True:
             try:
                 response = requests.get(pose_url, timeout=5)
@@ -305,7 +297,7 @@ class RobotClass:
                         navdata['Canbee_angle'] = angle_degree
                     with open(self.nav_data_path, 'w') as x:
                         json.dump(navdata, x, indent=4)
-                logging.info("Rotation completed to angle {}".format(angle_degree))
+                print("Rotation completed to angle {}".format(angle_degree))
                 break
 
         return rotated

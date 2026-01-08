@@ -7,7 +7,7 @@ import argparse
 def duration_to_seconds(duration):
     
     if isinstance(duration, (int, float)):
-        return float(duration)
+        return float(duration*60)
 
     if not isinstance(duration, str):
         return 0.0
@@ -19,11 +19,16 @@ def duration_to_seconds(duration):
     elif duration.endswith("h"):
         return float(duration[:-1]) * 3600
 
+    try:
+        return float(duration) * 60
+    except ValueError:
+        return 0.0
+    
 def is_stopped(json_path):
     try:
         with open(json_path, "r") as f:
             data = json.load(f)
-        return data.get("status") == "stopped"
+        return data.get("status") == "Stopped"
     except Exception:
         return False
     
@@ -44,6 +49,7 @@ def main():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(BASE_DIR, "nav.json")
     robot.nav_data_path=json_path
+    robot.runtime_dir=BASE_DIR
     abort_all = False
     with open(json_path, "w") as f:
         json.dump({"prev": None, "current": None}, f)
@@ -56,8 +62,21 @@ def main():
                 print("Test is stopped by user")
                 abort_all = True
                 break
-            rotation = data["angle"]
-            duration = data["duration"]
+            rotation = data.get("angle","")
+            if isinstance(rotation, list):
+                # If list like ["60,180"] or ["60", "180"]
+                angles = []
+                for a in rotation:
+                    try:
+                        angles.append(int(a))
+                    except (ValueError, TypeError):
+                        continue
+                rotation=angles
+            else:
+                rotation = []
+
+            
+            duration = data.get("duration", 0)
             if duration!=0:
                 duration =duration_to_seconds(duration)
             print("checking for battery")
@@ -67,7 +86,7 @@ def main():
                 break
             print("Moving to point",coord)
             matched,abort = robot.move_to_coordinate(coord=coord)
-
+            print("abort",abort)
             if abort:
                 abort_all=True
                 break

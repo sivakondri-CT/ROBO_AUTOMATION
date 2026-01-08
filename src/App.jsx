@@ -171,14 +171,30 @@ const handleRunSubmit = async ({ values, iterations }) => {
   return (
     <div className="app-root">
        <GlobalHeader
-    onStop={() => fetch("http://localhost:8000/robot/nav/cancel", { method: "POST" })}
-    onCharge={() =>
-      fetch("http://localhost:8000/robot/charge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: 0, point: "Charging pile" })
-      })
-    }
+    onStop={async () => {
+    try {
+        const response = await fetch("http://localhost:8000/stoptest", {
+          method: "POST"
+        });
+
+        const data = await response.json();
+        console.log(data.message);
+      } catch (err) {
+        console.error("Stop failed:", err);
+      }
+    }}
+    onCharge={async () => {
+      try {
+        const response = await fetch("http://localhost:8000/charge", {
+          method: "POST"
+        });
+
+        const data = await response.json();
+        console.log(data.message);
+      } catch (err) {
+        console.error("Charge failed:", err);
+      }
+    }}
   />
       <Sidebar     
         houseList={houseList}
@@ -238,6 +254,7 @@ const handleRunSubmit = async ({ values, iterations }) => {
     order={data.houses[selectedHouse].floors[selectedFloor]
       .scenarios[selectedScenario].Coordinate_order}
     coordinates={data.houses[selectedHouse].floors[selectedFloor].coordinates}
+    selectedScenario={selectedScenario}
     onSubmit={handleRunSubmit}
     onClose={() => setShowRunModal(false)}
   />

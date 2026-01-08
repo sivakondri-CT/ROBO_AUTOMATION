@@ -12,6 +12,7 @@ import uuid
 from fastapi import HTTPException
 import requests
 import config
+import json
 
 from tasks import run_robo_task
 origins = ["*"]
@@ -159,3 +160,40 @@ def run_robo_endpoint(coordinate_data:dict, robot_ip: str = "192.168.200.153"):
 
     task = run_robo_task.delay("robo_control.py", args)
     return {"task_id": task.id, "status": "started"}
+
+@app.post("/stoptest")
+def cancel_navigation():
+    NAV_FILE = Path(__file__).parent / "nav.json"
+    try:
+        # 1. Read nav.json
+        if NAV_FILE.exists():
+            with open(NAV_FILE, "r") as f:
+                nav_data = json.load(f)
+        else:
+            nav_data = {}
+
+        nav_data["status"] = "Stopped"
+
+        with open(NAV_FILE, "w") as f:
+            json.dump(nav_data, f, indent=2)
+
+        return {"message": "Navigation stopped", "status": "Stopped"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update nav.json: {str(e)}"
+        )
+    
+
+@app.post("/charge")
+def move_to_chargepoint():
+    data=get("/reeman/position")
+    charge_point_name=None
+    for wp in data.get("waypoints", []):
+        if wp.get("type") == "charge":
+            charge_point_name = wp["name"]
+    body={"point": charge_point_name}
+    
+    return post("/cmd/nav_name",body)
+

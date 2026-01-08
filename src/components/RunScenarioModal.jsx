@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function RunScenarioModal({ order, coordinates,selectedScenario, onSubmit, onClose }) {
+export default function RunScenarioModal({ order, coordinates,selectedScenario, onSubmit, onClose,onSave }) {
   const [values, setValues] = useState(() =>
     order.reduce((acc, id) => {
       acc[id] = {

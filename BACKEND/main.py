@@ -83,27 +83,27 @@ def apply_map(payload: dict):
         raise HTTPException(status_code=500, detail=f"Failed to apply map: {str(e)}")
 
 
-@app.post("/robot/config")
-def set_robot(cfg: RobotConfig):
-    set_robot_host(cfg.ip)
-    return {"status": "ok", "ip": cfg.ip}
-
 # @app.post("/robot/config")
 # def set_robot(cfg: RobotConfig):
-#     try:
-#         # Try setting the robot IP
-#         set_robot_host(cfg.ip)
+#     set_robot_host(cfg.ip)
+#     return {"status": "ok", "ip": cfg.ip}
 
-#         # Test connectivity 
-#         r = requests.get(f"http://{cfg.ip}/reeman/hostname", timeout=3)
-#         r.raise_for_status()
+@app.post("/robot/config")
+def set_robot(cfg: RobotConfig):
+    try:
+        # Try setting the robot IP
+        set_robot_host(cfg.ip)
 
-#         return {"status": "ok", "ip": cfg.ip}
+        # Test connectivity 
+        r = requests.get(f"http://{cfg.ip}/reeman/hostname", timeout=3)
+        r.raise_for_status()
 
-#     except requests.exceptions.RequestException:
-#         # Reset robot host if unreachable
-#         set_robot_host(None)
-#         raise HTTPException(status_code=400, detail="Robot not reachable at given IP")
+        return {"status": "ok", "ip": cfg.ip}
+
+    except requests.exceptions.RequestException:
+        # Reset robot host if unreachable
+        set_robot_host(None)
+        raise HTTPException(status_code=400, detail="Robot not reachable at given IP")
 
 @app.post("/layout/upload_map")
 async def upload_map(file: UploadFile = File(...)):
@@ -248,4 +248,8 @@ def is_celery_running():
         return {"running": bool(response)}
     except Exception:
         return {"running": False}
+@app.get("/robot/nav/status")
+def nav_status():
+    with open("nav.json") as f:
+        return json.load(f)
 

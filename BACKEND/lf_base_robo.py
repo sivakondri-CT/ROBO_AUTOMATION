@@ -265,7 +265,7 @@ class RobotClass:
         elif angle <= -180:
             angle += 360
         angle = round(math.radians(angle), 2)
-
+        print("theta",angle)
         nav_pathurl = 'http://' + self.robo_ip + '/cmd/nav'
         pose_url = 'http://' + self.robo_ip + '/reeman/pose'
         print("targetx",self.target_x,"targety",self.target_y)
@@ -289,7 +289,8 @@ class RobotClass:
                 break
             theta = data_pose['theta']
             theta = round(theta, 2)
-            if abs(angle - theta) <= 0.15:
+            angle_diff = (angle - theta + math.pi) % (2 * math.pi) - math.pi
+            if abs(angle_diff) <= 0.15:
                 rotated = True
                 if self.nav_data_path is not None:
                     with open(self.nav_data_path, 'r') as x:

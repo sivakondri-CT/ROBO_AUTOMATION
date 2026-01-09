@@ -36,6 +36,27 @@ export default function App() {
   useEffect(() => {
     layoutAPI.get().then(d => setData(d || { houses: {} }));
   }, []);
+   useEffect(() => {
+  const preventZoom = (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+    }
+  };
+
+  window.addEventListener("wheel", preventZoom, { passive: false });
+  window.addEventListener("keydown", (e) => {
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      ["+", "-", "=", "0"].includes(e.key)
+    ) {
+      e.preventDefault();
+    }
+  });
+
+  return () => {
+    window.removeEventListener("wheel", preventZoom);
+  };
+}, []);
 
   const currentFloor =
     selectedHouse && selectedFloor
@@ -49,6 +70,16 @@ export default function App() {
 
     }
   }, [currentFloor]);
+
+    useEffect(() => {
+  if (currentFloor?.slamMap?.id) {
+    fetch("http://localhost:8000/cmd/apply_map", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: currentFloor.slamMap.id })
+    });
+  }
+}, [currentFloor?.slamMap?.id]);
   const handleUpload = async (fileOrUrl) => {
   try {
     let file = fileOrUrl;
@@ -75,11 +106,20 @@ export default function App() {
     }
 
     if (!updated.houses[selectedHouse].floors[selectedFloor]) {
+      // updated.houses[selectedHouse].floors[selectedFloor] = {
+      //   floorMap: null,
+      //   coordinates: {},
+      //   scenarios: {}
+      // };
+      const prev = updated.houses[selectedHouse].floors[selectedFloor] || {};
       updated.houses[selectedHouse].floors[selectedFloor] = {
+        ...prev,
         floorMap: null,
-        coordinates: {},
-        scenarios: {}
+        coordinates: prev.coordinates || {},
+        scenarios: prev.scenarios || {},
+        slamMap: prev.slamMap || null
       };
+
     }
 
     updated.houses[selectedHouse].floors[selectedFloor].floorMap = filename;
@@ -136,30 +176,94 @@ const handleRunSubmit = async ({ values, iterations }) => {
 
 
 
-  const saveCurrentFloor = async () => {
-    if (!mapURL || !selectedHouse || !selectedFloor || !selectedScenario) {
-      alert("Select house, floor, scenario and upload map");
-      return;
+  // const saveCurrentFloor = async () => {
+  //   if (!mapURL || !selectedHouse || !selectedFloor || !selectedScenario) {
+  //     alert("Select house, floor, scenario and upload map");
+  //     return;
+  //   }
+
+  //   const floor = data.houses[selectedHouse].floors[selectedFloor];
+
+  //   const payload = {
+  //     floorMap: mapURL.split("/").pop(),
+  //     house: selectedHouse,
+  //     floor: selectedFloor,
+  //     scenario: {
+  //       name: selectedScenario,
+  //           Coordinate_order: floor.scenarios[selectedScenario]?.Coordinate_order || []
+
+
+  //     },
+  //     coordinates: floor.coordinates || {}
+  //   };
+
+  //   await layoutAPI.save(payload);
+  //   alert("Saved to backend");
+  // };
+ const saveCurrentFloor = async (valuesOverride) => {
+  if (!mapURL || !selectedHouse || !selectedFloor || !selectedScenario) {
+    alert("Select house, floor, scenario and upload map");
+    return;
+  }
+
+  const updated = structuredClone(data);
+  const floor = updated.houses[selectedHouse].floors[selectedFloor];
+
+  if (
+    valuesOverride &&
+    typeof valuesOverride === "object" &&
+    !Array.isArray(valuesOverride)
+  ) {
+    for (const key of Object.keys(valuesOverride)) {
+      const entry = valuesOverride[key];
+      if (!entry || typeof entry !== "object") continue;
+
+      const { duration, angle } = entry;
+
+      if (!floor.coordinates[key]) continue;
+
+      if (duration !== "" && duration != null) {
+        floor.coordinates[key].duration = Number(duration);
+      }
+
+      if (angle !== "" && angle != null) {
+        if (Array.isArray(angle)) {
+          floor.coordinates[key].angle = angle.map(Number);
+        } else if (typeof angle === "string") {
+          floor.coordinates[key].angle = angle
+            .split(",")
+            .map(a => a.trim())
+            .filter(Boolean)
+            .map(Number);
+        }
+      }
     }
+  }
 
-    const floor = data.houses[selectedHouse].floors[selectedFloor];
+  setData(updated);
 
-    const payload = {
-      floorMap: mapURL.split("/").pop(),
-      house: selectedHouse,
-      floor: selectedFloor,
-      scenario: {
-        name: selectedScenario,
-            Coordinate_order: floor.scenarios[selectedScenario]?.Coordinate_order || []
+  const payload = {
+    floorMap: mapURL.split("/").pop(),
+    house: selectedHouse,
+    floor: selectedFloor,
+    scenario: {
+      name: selectedScenario,
+      Coordinate_order:
+        updated.houses[selectedHouse].floors[selectedFloor]
+          .scenarios[selectedScenario]?.Coordinate_order || []
+    },
+    coordinates:
+      updated.houses[selectedHouse].floors[selectedFloor].coordinates || {},
+    slamMap:  updated.houses[selectedHouse].floors[selectedFloor].slamMap || null
 
-
-      },
-      coordinates: floor.coordinates || {}
-    };
-
-    await layoutAPI.save(payload);
-    alert("Saved to backend");
   };
+
+  await layoutAPI.save(payload);
+  alert("Saved to backend");
+};
+
+
+
 
   const houseList = Object.keys(data.houses || {});
   const floorList = selectedHouse ? Object.keys(data.houses[selectedHouse]?.floors || {}) : [];
@@ -256,6 +360,7 @@ const handleRunSubmit = async ({ values, iterations }) => {
     coordinates={data.houses[selectedHouse].floors[selectedFloor].coordinates}
     selectedScenario={selectedScenario}
     onSubmit={handleRunSubmit}
+    onSave={saveCurrentFloor} 
     onClose={() => setShowRunModal(false)}
   />
 )}
@@ -277,18 +382,35 @@ const handleRunSubmit = async ({ values, iterations }) => {
 )}
 
 {showAddFloor && (
+  // <AddFloorModal
+  //   houseList={houseList}
+  //   onSubmit={(house, floor) => {
+  //     const updated = structuredClone(data);
+  //     updated.houses[house].floors[floor] = { coordinates: {}, scenarios: {} };
+  //     setData(updated);
+  //     setSelectedHouse(house);
+  //     setSelectedFloor(floor);
+  //     setShowAddFloor(false);
+  //   }}
+  //   onClose={() => setShowAddFloor(false)}
+  // />
   <AddFloorModal
-    houseList={houseList}
-    onSubmit={(house, floor) => {
-      const updated = structuredClone(data);
-      updated.houses[house].floors[floor] = { coordinates: {}, scenarios: {} };
-      setData(updated);
-      setSelectedHouse(house);
-      setSelectedFloor(floor);
-      setShowAddFloor(false);
-    }}
-    onClose={() => setShowAddFloor(false)}
-  />
+  houseList={houseList}
+  onSubmit={(house, floor, slamMap) => {
+    const updated = structuredClone(data);
+    updated.houses[house].floors[floor] = {
+      coordinates: {},
+      scenarios: {},
+      slamMap: slamMap   // store object
+    };
+    setData(updated);
+    setSelectedHouse(house);
+    setSelectedFloor(floor);
+    setShowAddFloor(false);
+  }}
+  onClose={() => setShowAddFloor(false)}
+/>
+
 )}
 
 {showAddScenario && (

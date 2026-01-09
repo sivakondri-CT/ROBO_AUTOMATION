@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function RunScenarioModal({ order, coordinates,selectedScenario, onSubmit, onClose }) {
+export default function RunScenarioModal({ order, coordinates,selectedScenario, onSubmit, onClose,onSave }) {
   const [values, setValues] = useState(() =>
     order.reduce((acc, id) => {
       acc[id] = {
@@ -24,6 +24,15 @@ export default function RunScenarioModal({ order, coordinates,selectedScenario, 
     console.log("Order:", order);
     console.log("Values:", JSON.stringify(values, null, 2));
     try {
+
+      const req = await fetch("http://localhost:8000/celery/running");
+      const res = await req.json();
+
+      if (!res.running) {
+        alert("Celery is not running. Please start Celery.");
+        return; 
+      }
+
       const response = await fetch("http://localhost:8000/run-robo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -49,7 +58,7 @@ export default function RunScenarioModal({ order, coordinates,selectedScenario, 
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card wide" onClick={e => e.stopPropagation()}>
         <h3>Run Scenario</h3>
-
+       <div className="param-grid-wrapper">
         <div className="param-grid">
           <div className="param-header">Point</div>
           <div className="param-header">Duration (min)</div>
@@ -89,9 +98,11 @@ export default function RunScenarioModal({ order, coordinates,selectedScenario, 
         </div>
 
         <div className="modal-actions1">
+          <button className="btn" onClick={() => onSave(values)}>Save</button>
           <button className="btn primary" onClick={handleRun}>Run</button>
           <button className="btn ghost" onClick={onClose}>Cancel</button>
         </div>
+      </div>
       </div>
     </div>
   );

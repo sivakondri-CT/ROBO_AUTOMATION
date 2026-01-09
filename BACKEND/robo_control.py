@@ -58,6 +58,8 @@ def main():
             print("Test is stopped by user")
             break
         for coord , data in coordinate_data.items():
+            print("coord",coord)
+            print("data",data)
             if is_stopped(json_path):
                 print("Test is stopped by user")
                 abort_all = True
@@ -73,9 +75,9 @@ def main():
                         continue
                 rotation=angles
             else:
-                rotation = []
+                rotation = rotation.split(",")
 
-            
+            print("rotation",rotation)
             duration = data.get("duration", 0)
             if duration!=0:
                 duration =duration_to_seconds(duration)
@@ -92,7 +94,7 @@ def main():
                 break
             if matched:
                 print("Reached point",coord)
-                if isinstance(rotation, list) and rotation:
+                if isinstance(rotation, list) and any(rotation):
                     for angle in rotation:
                         pause,stopped=robot.wait_for_battery()
                         if stopped:
@@ -100,6 +102,7 @@ def main():
                             break
                         rotated=robot.rotate_angle(angle)
                         if rotated:
+                            print("waiting for duration",duration)
                             time.sleep(duration)
                         else:
                             continue
@@ -114,6 +117,7 @@ def main():
             break
     with open(json_path, "w") as f:
         json.dump({}, f)
+    print("TEST COMPLETED .......")
 
 if __name__ == "__main__":
     main()

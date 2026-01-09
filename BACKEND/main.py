@@ -7,6 +7,7 @@ from robot_client import get, post, set_robot_host
 from storage import load_data, save_data, merge_layout
 
 from pathlib import Path
+from celery_app import celery
 import shutil
 import uuid
 from fastapi import HTTPException
@@ -41,6 +42,46 @@ def get_layout():
 def update_layout(data: dict = Body(...)):
     merge_layout(data)
     return {"status": "ok"}
+
+# @app.get("/reeman/history_map")
+# def get_history_maps():
+#     return {
+#         "maps": ["Office", "Warehouse", "Lab", "Floor1"]
+#     }
+
+@app.get("/reeman/history_map")
+def history_map():
+    data = get("/reeman/history_map")  
+
+    maps = []
+    for m in data.get("maps", []):
+        alias = m.get("alias")
+        name = m.get("name")
+        if alias:
+            maps.append({
+                "id": name,
+                "alias": alias
+            })
+
+    return {"maps": maps}
+
+@app.post("/cmd/apply_map")
+def apply_map(payload: dict):
+    try:
+        print("Apply map called:", payload)
+
+        resp = post("/cmd/apply_map", payload)
+
+        # If robot_client.post already raises on error, this line won't be reached on failure
+        return {
+            "status": "ok",
+            "robot_response": resp
+        }
+
+    except Exception as e:
+        print("Apply map failed:", str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to apply map: {str(e)}")
+
 
 @app.post("/robot/config")
 def set_robot(cfg: RobotConfig):
@@ -152,7 +193,7 @@ def apply_map(name: dict):
     return post("/cmd/apply_map", name)
 
 @app.post("/run-robo")
-def run_robo_endpoint(coordinate_data:dict, robot_ip: str = "192.168.200.153"):
+def run_robo_endpoint(coordinate_data:dict, robot_ip: str = "192.168.200.175"):
     args = {
         "coordinate_data": coordinate_data,
         "robot_ip": robot_ip
@@ -163,6 +204,7 @@ def run_robo_endpoint(coordinate_data:dict, robot_ip: str = "192.168.200.153"):
 
 @app.post("/stoptest")
 def cancel_navigation():
+    post("/cmd/cancel_goal")
     NAV_FILE = Path(__file__).parent / "nav.json"
     try:
         # 1. Read nav.json
@@ -188,7 +230,7 @@ def cancel_navigation():
 
 @app.post("/charge")
 def move_to_chargepoint():
-    data=get("/reeman/position")
+    data=get("/reeman/position")   
     charge_point_name=None
     for wp in data.get("waypoints", []):
         if wp.get("type") == "charge":
@@ -196,4 +238,14 @@ def move_to_chargepoint():
     body={"point": charge_point_name}
     
     return post("/cmd/nav_name",body)
+
+
+@app.get("/celery/running")
+def is_celery_running():
+    try:
+        insp = celery.control.inspect(timeout=1)
+        response = insp.ping()
+        return {"running": bool(response)}
+    except Exception:
+        return {"running": False}
 

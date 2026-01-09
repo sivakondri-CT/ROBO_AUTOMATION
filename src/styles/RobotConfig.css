@@ -78,3 +78,31 @@
   cursor: not-allowed;
   box-shadow: none;
 }
+.param-grid-wrapper {
+  max-height: 360px;        /* ~8 rows */
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 10px 0;
+  padding-right: 6px;
+}
+
+.param-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.param-header {
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+}
+
+.modal-actions1 {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

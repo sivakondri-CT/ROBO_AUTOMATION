@@ -19,7 +19,6 @@ def merge_layout(payload: dict):
     scenario_data = payload.get("scenario", {})
     scenario_name = scenario_data.get("name")
 
-    # Reject invalid keys
     if not house or not floor:
         print("Skipping merge: invalid house/floor", house, floor)
         return
@@ -30,14 +29,21 @@ def merge_layout(payload: dict):
     data["houses"][house]["floors"].setdefault(floor, {
         "floorMap": None,
         "coordinates": {},
-        "scenarios": {}
+        "scenarios": {},
+        "slamMap": None         
     })
 
     floor_obj = data["houses"][house]["floors"][floor]
 
+    # floorMap
     if payload.get("floorMap"):
         floor_obj["floorMap"] = payload["floorMap"]
 
+    # slamMap
+    if "slamMap" in payload and payload["slamMap"] is not None:
+        floor_obj["slamMap"] = payload["slamMap"]
+
+    # coordinates
     coords = payload.get("coordinates", {})
     if isinstance(coords, dict):
         floor_obj.setdefault("coordinates", {})
@@ -47,6 +53,7 @@ def merge_layout(payload: dict):
                 if v is not None:
                     floor_obj["coordinates"][cid][k] = v
 
+    # scenarios
     if scenario_name:
         floor_obj.setdefault("scenarios", {})
         floor_obj["scenarios"].setdefault(scenario_name, {})

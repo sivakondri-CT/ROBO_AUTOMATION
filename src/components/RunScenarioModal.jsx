@@ -51,7 +51,8 @@ export default function RunScenarioModal({ order, coordinates,selectedScenario, 
       console.error("Error starting task:", err);
       alert("Failed to start task");
     }
-    onSubmit({ values, iterations });
+    onSubmit({ values, iterations, runName: selectedScenario });
+
   };
 
   return (

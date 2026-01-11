@@ -12,13 +12,19 @@ import shutil
 import uuid
 from fastapi import HTTPException
 import requests
+import os
 import config
 import json
+from fastapi import Query, HTTPException
+
 
 from tasks import run_robo_task
 origins = ["*"]
 
 app = FastAPI(title="SLAM Robot Backend")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+RESULTS_DIR = os.path.join(BASE_DIR, "results")
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -149,10 +155,6 @@ def nav_name(data: NavByName):
 def nav_status():
     return get("/reeman/nav_status")
 
-@app.post("/robot/nav/cancel")
-def cancel_nav():
-    return post("/cmd/cancel_goal")
-
 @app.post("/robot/speed")
 def set_speed(speed: Speed):
     return post("/cmd/speed", speed.dict())
@@ -193,21 +195,27 @@ def apply_map(name: dict):
     return post("/cmd/apply_map", name)
 
 @app.post("/run-robo")
-def run_robo_endpoint(coordinate_data:dict, robot_ip: str = "192.168.200.175"):
+def run_robo_endpoint(coordinate_data:dict, robot_ip: str = "192.168.200.179"):
     args = {
         "coordinate_data": coordinate_data,
         "robot_ip": robot_ip
     }
 
     task = run_robo_task.delay("robo_control.py", args)
-    return {"task_id": task.id, "status": "started"}
+    return {"task_id": task.id, "status": "started"
+}
 
 @app.post("/stoptest")
 def cancel_navigation():
-    post("/cmd/cancel_goal")
-    NAV_FILE = Path(__file__).parent / "nav.json"
     try:
-        # 1. Read nav.json
+        try:
+            # send cancel to robot via robot_client
+            post("/cmd/cancel_goal", {})
+        except Exception as e:
+            print("Warning: robot cancel failed:", e)
+
+        NAV_FILE = Path(__file__).parent / "nav.json"
+
         if NAV_FILE.exists():
             with open(NAV_FILE, "r") as f:
                 nav_data = json.load(f)
@@ -222,11 +230,8 @@ def cancel_navigation():
         return {"message": "Navigation stopped", "status": "Stopped"}
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to update nav.json: {str(e)}"
-        )
-    
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/charge")
 def move_to_chargepoint():
@@ -253,3 +258,76 @@ def nav_status():
     with open("nav.json") as f:
         return json.load(f)
 
+@app.get("/robot/nav_status")
+def robot_nav_status():
+    return get("/reeman/nav_status")
+@app.get("/robot/logs/{run_name}")
+def get_run_logs(run_name: str):
+    log_path = os.path.join(RESULTS_DIR, run_name, "stdout.log")
+
+    if not os.path.exists(log_path):
+        return {"lines": []}
+
+    try:
+        with open(log_path, "r") as f:
+            lines = f.readlines()
+        return {"lines": lines}
+    except Exception as e:
+        return {"error": str(e), "lines": []}
+    
+@app.get("/robot/logs/{run_name}/err")
+def get_run_err(run_name: str, lines: int = 200):
+    path = os.path.join("results", run_name, "stderr.log")
+
+    if not os.path.exists(path):
+        return {"lines": []}
+
+    with open(path, "r") as f:
+        content = f.readlines()
+
+    return {"lines": content[-lines:]}
+
+
+last_known = {}
+
+@app.get("/robot/current_pixel")
+def get_robot_pixel(house: str = Query(...), floor: str = Query(...)):
+    layout = load_data()
+
+    floor_data = layout["houses"].get(house, {}).get("floors", {}).get(floor)
+    if not floor_data:
+        return {"status": "invalid_floor"}
+
+    nav = requests.get("http://localhost:8000/robot/nav_status").json()
+    res = nav.get("res")
+    dist = float(nav.get("dist", 999))
+    goal = nav.get("goal")
+
+    coord = floor_data["coordinates"].get(goal)
+
+    key = (house, floor)
+    state = last_known.get(key, {"x": None, "y": None, "goal": None})
+
+    # Reached → update current position
+    if res == 3 and dist < 0.5 and coord:
+        last_known[key] = {
+            "x": coord["x"],
+            "y": coord["y"],
+            "goal": goal
+        }
+        return {
+            "status": "reached",
+            "goal": goal,
+            "x": coord["x"],
+            "y": coord["y"]
+        }
+
+    # Moving → keep last known position, but expose target if known
+    return {
+        "status": "moving",
+        "goal": goal,
+        "x": state["x"],
+        "y": state["y"],
+        "targetX": coord["x"] if coord else None,
+        "targetY": coord["y"] if coord else None
+    }

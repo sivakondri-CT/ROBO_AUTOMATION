@@ -8,11 +8,33 @@ export default function FloorMapCanvas({
   selectedFloor,
   onAddCoordinate,
   onMoveCoordinate,
-  onOpenAddCoordinate,         
-  onPrepareCoordinatePosition, 
+  onOpenAddCoordinate,
+  onPrepareCoordinatePosition,
 }) {
   const containerRef = useRef(null);
   const [rect, setRect] = useState(null);
+  const [robotPixel, setRobotPixel] = useState(null);
+
+  const fetchRobotPixel = async () => {
+    if (!selectedHouse || !selectedFloor) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:8000/robot/current_pixel?house=${selectedHouse}&floor=${selectedFloor}`
+      );
+      const json = await res.json();
+      setRobotPixel(json);
+    } catch (e) {
+      console.error("Failed to fetch robot pixel", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchRobotPixel();
+    const interval = setInterval(fetchRobotPixel, 3000);
+    return () => clearInterval(interval);
+  }, [selectedHouse, selectedFloor]);
+
   useEffect(() => {
     const update = () => {
       if (!containerRef.current) return;
@@ -24,13 +46,19 @@ export default function FloorMapCanvas({
   }, [mapURL]);
 
   const coordinates =
-    (selectedHouse && selectedFloor && data.houses?.[selectedHouse]?.floors?.[selectedFloor]?.coordinates) || {};
+    (selectedHouse &&
+      selectedFloor &&
+      data.houses?.[selectedHouse]?.floors?.[selectedFloor]?.coordinates) ||
+    {};
 
   const toCanvas = (clientX, clientY) => {
     if (!rect) return { x: clientX, y: clientY };
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    return { x: Math.max(0, Math.min(x, rect.width)), y: Math.max(0, Math.min(y, rect.height)) };
+    return {
+      x: Math.max(0, Math.min(x, rect.width)),
+      y: Math.max(0, Math.min(y, rect.height)),
+    };
   };
 
   const handleRightClick = (e) => {
@@ -52,11 +80,16 @@ export default function FloorMapCanvas({
 
     onOpenAddCoordinate();
   };
+
   useEffect(() => {
     if (!rect) return;
     Object.entries(coordinates).forEach(([id, pos]) => {
       if (pos.x <= 1 && pos.y <= 1) {
-        onMoveCoordinate(id, Math.round(rect.width / 2 - 18), Math.round(rect.height / 2 - 18));
+        onMoveCoordinate(
+          id,
+          Math.round(rect.width / 2 - 18),
+          Math.round(rect.height / 2 - 18)
+        );
       }
     });
   }, [rect]);
@@ -66,7 +99,7 @@ export default function FloorMapCanvas({
       <div
         ref={containerRef}
         className="canvas"
-        onContextMenu={handleRightClick} 
+        onContextMenu={handleRightClick}
       >
         {mapURL ? (
           <img
@@ -74,12 +107,31 @@ export default function FloorMapCanvas({
             alt="Floor map"
             className="floor-map"
             onLoad={() => {
-              if (containerRef.current) setRect(containerRef.current.getBoundingClientRect());
+              if (containerRef.current)
+                setRect(containerRef.current.getBoundingClientRect());
             }}
           />
         ) : (
           <div className="empty-canvas">No floor map</div>
         )}
+ 
+{robotPixel?.x != null && robotPixel?.y != null && (
+  <div
+    style={{
+      position: "absolute",
+      left: robotPixel.x,
+      top: robotPixel.y,
+      transform: "translate(-50%, -50%)",
+      pointerEvents: "none",
+      fontSize: "24px",
+      zIndex: 5,
+      transition: "left 0.3s linear, top 0.3s linear"
+    }}
+  >
+    🤖
+  </div>
+)}
+
 
         {Object.entries(coordinates).map(([id, pos]) => (
           <Marker
@@ -90,7 +142,11 @@ export default function FloorMapCanvas({
             containerRef={containerRef}
             onMove={(markerId, clientX, clientY) => {
               const p = toCanvas(clientX, clientY);
-              onMoveCoordinate(markerId, Math.round(p.x - 18), Math.round(p.y - 18));
+              onMoveCoordinate(
+                markerId,
+                Math.round(p.x - 18),
+                Math.round(p.y - 18)
+              );
             }}
           />
         ))}

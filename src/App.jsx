@@ -10,6 +10,7 @@ import RunScenarioModal from "./components/RunScenarioModal";
 import { layoutAPI } from "./services/layoutAPI";
 import "./styles/upload.css";
 import "./styles/RobotConfig.css";
+import RunLogsPanel from "./components/RunLogsPanel";
 // import RobotConfigBar from "./components/RobotConfigBar";
 import "./styles/RobotConfig.css";
 import GlobalHeader from "./components/GlobalHeader";
@@ -29,8 +30,14 @@ export default function App() {
   const [showAddFloor, setShowAddFloor] = useState(false);
   const [showAddScenario, setShowAddScenario] = useState(false);
   const [showRunModal, setShowRunModal] = useState(false);
+  const [runName, setRunName] = useState(null);
+
 
   const [status, setStatus] = useState("");
+  // const [robotIP, setRobotIP] = useState("192.168.200.179"); // or default robot IP
+  const [showLogs, setShowLogs] = useState(false);
+
+
   
 
   useEffect(() => {
@@ -136,7 +143,8 @@ export default function App() {
   setShowRunModal(true);
 };
 
-const handleRunSubmit = async ({ values, iterations }) => {
+
+const handleRunSubmit = async ({ values, iterations, runName }) => {
   const updated = structuredClone(data);
   const floor = updated.houses[selectedHouse].floors[selectedFloor];
 
@@ -162,8 +170,9 @@ const handleRunSubmit = async ({ values, iterations }) => {
 
   setData(updated);
   setShowRunModal(false);
-
   await layoutAPI.save(updated);
+
+  setRunName(runName);
 
   console.log("Running Scenario:", {
     order: floor.scenarios[selectedScenario]?.Coordinate_order,
@@ -171,8 +180,6 @@ const handleRunSubmit = async ({ values, iterations }) => {
     coordinates: floor.coordinates
   });
 };
-
-
 
 
 
@@ -274,13 +281,11 @@ const handleRunSubmit = async ({ values, iterations }) => {
 
   return (
     <div className="app-root">
-       <GlobalHeader
+     {status === "connected" && (
+  <GlobalHeader
     onStop={async () => {
-    try {
-        const response = await fetch("http://localhost:8000/stoptest", {
-          method: "POST"
-        });
-
+      try {
+        const response = await fetch("http://localhost:8000/stoptest", { method: "POST" });
         const data = await response.json();
         console.log(data.message);
       } catch (err) {
@@ -289,17 +294,27 @@ const handleRunSubmit = async ({ values, iterations }) => {
     }}
     onCharge={async () => {
       try {
-        const response = await fetch("http://localhost:8000/charge", {
-          method: "POST"
-        });
-
+        const response = await fetch("http://localhost:8000/charge", { method: "POST" });
         const data = await response.json();
         console.log(data.message);
       } catch (err) {
         console.error("Charge failed:", err);
       }
     }}
+    onToggleLogs={() => setShowLogs(v => !v)}
+    showLogs={showLogs}
   />
+)}
+
+  {showLogs && runName && (
+  <RunLogsPanel
+    runName={runName}
+    onClose={() => setShowLogs(false)}
+  />
+)}
+
+
+
       <Sidebar     
         houseList={houseList}
         floorList={floorList}
@@ -435,5 +450,5 @@ const handleRunSubmit = async ({ values, iterations }) => {
 
 
     </div>
-  );
-}
+  ); 
+} 

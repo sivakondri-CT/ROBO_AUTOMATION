@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import Marker from "./Marker";
+import robo_img from "../assets/robot.png";
 
 export default function FloorMapCanvas({
   mapURL,
@@ -128,7 +129,7 @@ export default function FloorMapCanvas({
       transition: "left 0.3s linear, top 0.3s linear"
     }}
   >
-    🤖
+    <img src={robo_img} alt="Robot" style={{width :"35px",height:"50px"}} />
   </div>
 )}
 

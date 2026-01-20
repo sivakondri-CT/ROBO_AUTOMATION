@@ -195,12 +195,14 @@ def apply_map(name: dict):
     return post("/cmd/apply_map", name)
 
 @app.post("/run-robo")
-def run_robo_endpoint(coordinate_data:dict, robot_ip: str = "192.168.200.179"):
+def run_robo_endpoint(coordinate_data:dict, robot_ip: str | None = None):
+    if robot_ip is None:
+        robot_ip = config.ROBOT_HOST
+    print("coordinate_data",coordinate_data)
     args = {
         "coordinate_data": coordinate_data,
         "robot_ip": robot_ip
     }
-
     task = run_robo_task.delay("robo_control.py", args)
     return {"task_id": task.id, "status": "started"
 }

@@ -1,9 +1,16 @@
-import React, { useState } from "react";
-
+import React, { useState,useEffect } from "react";
 export default function RunScenarioModal({ order, coordinates,selectedScenario, onSubmit, onClose,onSave }) {
+  const [cycleEnabled,setCycleEnabled]=useState(false);
+  const uniqueOrder = [...new Set(order)];
+  const applyCycle = (order, enabled) => {
+  if (!enabled || order.length <= 1) return order;
+  return [...order, ...order.slice(0, -1).reverse()];
+};
+  const finalOrder = applyCycle(order, cycleEnabled);
   const [values, setValues] = useState(() =>
-    order.reduce((acc, id) => {
-      acc[id] = {
+    order.reduce((acc, id,index) => {
+      acc[index] = {
+        coord: id,
         duration: coordinates[id]?.duration || "",
         angle: coordinates[id]?.angle || ""
       };
@@ -11,14 +18,40 @@ export default function RunScenarioModal({ order, coordinates,selectedScenario, 
     }, {})
   );
 
+  const finalValues = finalOrder.reduce((acc, coord, index) => {
+  const originalIndex = order.indexOf(coord);
+  const original = values[originalIndex] || {};
+
+  acc[index] = {
+    coord,
+    duration: original.duration || "",
+    angle: original.angle || ""
+  };
+  return acc;
+}, {});
+
+
+console.log("Unique Order:", uniqueOrder);
+
   const [iterations, setIterations] = useState(1);
 
-  const handleChange = (id, field, val) => {
-    setValues(v => ({
-      ...v,
-      [id]: { ...v[id], [field]: val }
-    }));
-  };
+  // const handleChange = (id, field, val) => {
+  //   setValues(v => ({
+  //     ...v,
+  //     [id]: { ...v[id], [field]: val }
+  //   }));
+  // };
+
+  const handleChange = (index, field, val) => {
+  setValues(v => ({
+    ...v,
+    [index]: { ...v[index], [field]: val }
+  }));
+};
+
+
+
+
 
   const handleRun = async () => {
     console.log("Order:", order);
@@ -37,9 +70,9 @@ export default function RunScenarioModal({ order, coordinates,selectedScenario, 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          coordinate_data: values,
+          coordinate_data: finalValues,
           iterations:iterations,
-          order:order,
+          order:finalOrder,
           name:selectedScenario,
         })
       });
@@ -64,30 +97,27 @@ export default function RunScenarioModal({ order, coordinates,selectedScenario, 
           <div className="param-header">Point</div>
           <div className="param-header">Duration (min)</div>
           <div className="param-header">Angles (°)</div>
+          {uniqueOrder.map((id, index) => (
+          <React.Fragment key={index}>
+            <div className="param-cell">Point {id}</div>
 
-          {order.map(id => (
-            <React.Fragment key={id}>
-              <div className="param-cell">Point {id}</div>
+            <input
+              type="number"
+              value={values[index]?.duration || ""}
+              onChange={e => handleChange(index, "duration", e.target.value)}
+            />
 
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={values[id].duration}
-                onChange={e => handleChange(id, "duration", e.target.value)}
-              />
+            <input
+              type="text"
+              value={values[index]?.angle || ""}
+              onChange={e => handleChange(index, "angle", e.target.value)}
+            />
+          </React.Fragment>
+        ))}
 
-              <input
-                type="text"
-                placeholder="0,45,90"
-                value={values[id].angle}
-                onChange={e => handleChange(id, "angle", e.target.value)}
-              />
-            </React.Fragment>
-          ))}
         </div>
-
         <div className="iteration-row">
+        <div className="iteration-item">
           <label>Iterations</label>
           <input
             type="number"
@@ -98,8 +128,20 @@ export default function RunScenarioModal({ order, coordinates,selectedScenario, 
           />
         </div>
 
+        <div className="cycle-item">
+          <label className="cycle-label">
+            <input
+              type="checkbox"
+              checked={cycleEnabled}
+              onChange={e => setCycleEnabled(e.target.checked)}
+            />
+            <span>Cycle</span>
+          </label>
+        </div>
+      </div>
+
         <div className="modal-actions1">
-          <button className="btn" onClick={() => onSave(values)}>Save</button>
+          <button className="btn" onClick={() => onSave(finalValues)}>Save</button>
           <button className="btn primary" onClick={handleRun}>Run</button>
           <button className="btn ghost" onClick={onClose}>Cancel</button>
         </div>

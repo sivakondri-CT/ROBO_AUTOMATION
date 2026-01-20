@@ -15,11 +15,7 @@ def run_robo_task(self,script_name: str, args: dict):
     iteration = args["coordinate_data"]["iterations"]
     order=args['coordinate_data']['order']
     name = args['coordinate_data']['name']
-    coordinate_data = {
-        key: coordinate_data[key]
-        for key in order
-        if key in coordinate_data
-    }
+    coordinate_data = coordinate_data
     coordinate_json = json.dumps(coordinate_data)
     print("coordinatedata",coordinate_data)
     cmd = " python3 -u robo_control.py --robot_ip {} --coordinate_data '{}' --iterations {}".format(robo_ip,coordinate_json,iteration)

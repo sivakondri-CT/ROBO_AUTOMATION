@@ -181,33 +181,8 @@ const handleRunSubmit = async ({ values, iterations, runName }) => {
   });
 };
 
-
-
-  // const saveCurrentFloor = async () => {
-  //   if (!mapURL || !selectedHouse || !selectedFloor || !selectedScenario) {
-  //     alert("Select house, floor, scenario and upload map");
-  //     return;
-  //   }
-
-  //   const floor = data.houses[selectedHouse].floors[selectedFloor];
-
-  //   const payload = {
-  //     floorMap: mapURL.split("/").pop(),
-  //     house: selectedHouse,
-  //     floor: selectedFloor,
-  //     scenario: {
-  //       name: selectedScenario,
-  //           Coordinate_order: floor.scenarios[selectedScenario]?.Coordinate_order || []
-
-
-  //     },
-  //     coordinates: floor.coordinates || {}
-  //   };
-
-  //   await layoutAPI.save(payload);
-  //   alert("Saved to backend");
-  // };
  const saveCurrentFloor = async (valuesOverride) => {
+  console.log("valuesOverride", valuesOverride);
   if (!mapURL || !selectedHouse || !selectedFloor || !selectedScenario) {
     alert("Select house, floor, scenario and upload map");
     return;
@@ -217,35 +192,42 @@ const handleRunSubmit = async ({ values, iterations, runName }) => {
   const floor = updated.houses[selectedHouse].floors[selectedFloor];
 
   if (
-    valuesOverride &&
-    typeof valuesOverride === "object" &&
-    !Array.isArray(valuesOverride)
-  ) {
-    for (const key of Object.keys(valuesOverride)) {
-      const entry = valuesOverride[key];
-      if (!entry || typeof entry !== "object") continue;
+  valuesOverride &&
+  typeof valuesOverride === "object" &&
+  !Array.isArray(valuesOverride)
+) {
+  for (const entry of Object.values(valuesOverride)) {
+    if (!entry || typeof entry !== "object") continue;
 
-      const { duration, angle } = entry;
+    const { coord, duration, angle } = entry;
+    if (!coord) continue;
 
-      if (!floor.coordinates[key]) continue;
+    const coordKey = String(coord);
 
-      if (duration !== "" && duration != null) {
-        floor.coordinates[key].duration = Number(duration);
-      }
+    const target = floor.coordinates[coordKey];
+    if (!target) {
+      console.warn("Coordinate not found:", coordKey);
+      continue;
+    }
 
-      if (angle !== "" && angle != null) {
-        if (Array.isArray(angle)) {
-          floor.coordinates[key].angle = angle.map(Number);
-        } else if (typeof angle === "string") {
-          floor.coordinates[key].angle = angle
-            .split(",")
-            .map(a => a.trim())
-            .filter(Boolean)
-            .map(Number);
-        }
+    if (duration !== "" && duration != null) {
+      target.duration = Number(duration);
+    }
+
+    if (angle !== "" && angle != null) {
+      if (Array.isArray(angle)) {
+        target.angle = angle.map(Number);
+      } else if (typeof angle === "string") {
+        target.angle = angle
+          .split(",")
+          .map(a => a.trim())
+          .filter(Boolean)
+          .map(Number);
       }
     }
   }
+}
+
 
   setData(updated);
 

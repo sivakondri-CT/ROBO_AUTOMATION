@@ -3,6 +3,17 @@ import time
 import os
 import json
 import argparse
+import logging
+import sys
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 
 def duration_to_seconds(duration):
     
@@ -55,13 +66,14 @@ def main():
         json.dump({"prev": None, "current": None}, f)
     for iteration in range(args.iterations):
         if is_stopped(json_path):
-            print("Test is stopped by user")
+            logging.info("Test is stopped by user")
             break
-        for coord , data in coordinate_data.items():
+        for _, data in coordinate_data.items():
+            coord=data.get("coord")
             print("coord",coord)
             print("data",data)
             if is_stopped(json_path):
-                print("Test is stopped by user")
+                logging.info("Test is stopped by user")
                 abort_all = True
                 break
             rotation = data.get("angle","")
@@ -77,23 +89,23 @@ def main():
             else:
                 rotation = rotation.split(",")
 
-            print("rotation",rotation)
+            logging.info("rotation", rotation)
             duration = data.get("duration", 0)
             if duration!=0:
                 duration =duration_to_seconds(duration)
-            print("checking for battery")
+            logging.info("checking for battery")
             pause,stopped=robot.wait_for_battery()
             if stopped:
                 abort_all=True
                 break
-            print("Moving to point",coord)
+            # logging.info(f"Moving to point {coord}")
             matched,abort = robot.move_to_coordinate(coord=coord)
             print("abort",abort)
             if abort:
                 abort_all=True
                 break
             if matched:
-                print("Reached point",coord)
+                logging.info(f"Reached point {coord}")  
                 if isinstance(rotation, list) and any(rotation):
                     for angle in rotation:
                         pause,stopped=robot.wait_for_battery()
@@ -102,13 +114,13 @@ def main():
                             break
                         rotated=robot.rotate_angle(angle)
                         if rotated:
-                            print("waiting for duration",duration)
+                            logging.info(f"waiting for duration {duration} seconds")
                             time.sleep(duration)
                         else:
                             continue
                 else:
                     if(duration!=0):
-                        print("waiting for duration",duration)
+                        logging.info(f"waiting for duration {duration} seconds")
                         time.sleep(duration)
                     else:
                         continue
@@ -117,7 +129,7 @@ def main():
             break
     with open(json_path, "w") as f:
         json.dump({}, f)
-    print("TEST COMPLETED .......")
+    logging.info("Test completed")
 
 if __name__ == "__main__":
     main()

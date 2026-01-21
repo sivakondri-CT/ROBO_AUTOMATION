@@ -9,8 +9,19 @@ export default function CoordinateModal({ onSubmit, onClose }) {
   }, []);
 
   const handleAdd = () => {
-    if (!coord) return alert("Enter a coordinate ID (e.g., 1)");
-    onSubmit(String(coord));
+    if (!coord) return alert("Enter coordinate ID(s)");
+
+    const ids = coord
+      .split(",")
+      .map(c => c.trim())
+      .filter(Boolean);
+
+    const invalid = ids.find(id => !/^\d+$/.test(id));
+    if (invalid) {
+      return alert(`Invalid coordinate ID: ${invalid}`);
+    }
+
+    onSubmit(ids);   
     setCoord("");
   };
 
@@ -21,7 +32,7 @@ export default function CoordinateModal({ onSubmit, onClose }) {
         <input
           ref={ref}
           type="text"
-          placeholder="Enter coordinate ID (1,2,3...)"
+          placeholder="Enter coordinate IDs (1,2,3...)"
           value={coord}
           onChange={(e) => setCoord(e.target.value)}
         />

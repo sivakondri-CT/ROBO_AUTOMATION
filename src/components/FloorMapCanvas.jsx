@@ -7,6 +7,7 @@ export default function FloorMapCanvas({
   data,
   selectedHouse,
   selectedFloor,
+  selectedScenario,
   onAddCoordinate,
   onMoveCoordinate,
   onOpenAddCoordinate,
@@ -16,6 +17,19 @@ export default function FloorMapCanvas({
   const [rect, setRect] = useState(null);
   const [robotPixel, setRobotPixel] = useState(null);
 
+  const scenarioOrder =
+  selectedHouse &&
+  selectedFloor &&
+  selectedScenario
+    ? data.houses?.[selectedHouse]
+        ?.floors?.[selectedFloor]
+        ?.scenarios?.[selectedScenario]
+        ?.Coordinate_order || []
+    : [];
+
+  const highlightedSet = new Set(scenarioOrder);
+
+
   const fetchRobotPixel = async () => {
     if (!selectedHouse || !selectedFloor) return;
 
@@ -24,6 +38,7 @@ export default function FloorMapCanvas({
         `http://localhost:8000/robot/current_pixel?house=${selectedHouse}&floor=${selectedFloor}`
       );
       const json = await res.json();
+      console.log("Fetched robot pixel:", json);
       setRobotPixel(json);
     } catch (e) {
       console.error("Failed to fetch robot pixel", e);
@@ -141,6 +156,7 @@ export default function FloorMapCanvas({
             x={pos.x}
             y={pos.y}
             containerRef={containerRef}
+            highlighted={highlightedSet.has(id)} 
             onMove={(markerId, clientX, clientY) => {
               const p = toCanvas(clientX, clientY);
               onMoveCoordinate(

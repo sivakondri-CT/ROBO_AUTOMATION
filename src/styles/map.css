@@ -13,7 +13,7 @@
 .floor-map { width: 100%; height: 100%; object-fit: contain; display: block; }
 
 /* marker */
-.marker { position: absolute; width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(180deg,#ef4444,#dc2626); color: white; display:flex; align-items:center; justify-content:center; font-weight: 700; box-shadow: 0 6px 14px rgba(0,0,0,0.18); border: 2px solid #fff; cursor: grab; user-select: none; touch-action: none; transform: translate(-0%, -0%); }
+.marker { position: absolute; width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(180deg,#2db443,#28a056); color: white; display:flex; align-items:center; justify-content:center; font-weight: 700; box-shadow: 0 6px 14px rgba(0,0,0,0.18); border: 2px solid #fff; cursor: grab; user-select: none; touch-action: none; transform: translate(-0%, -0%); }
 .marker.dragging { cursor: grabbing; }
 
 /* modal */

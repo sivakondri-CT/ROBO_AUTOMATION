@@ -324,6 +324,7 @@ const handleRunSubmit = async ({ values, iterations, runName }) => {
     data={data}
     selectedHouse={selectedHouse}
     selectedFloor={selectedFloor}
+    selectedScenario={selectedScenario}
     onAddCoordinate={(id, x, y) => {
       const updated = structuredClone(data);
       updated.houses[selectedHouse].floors[selectedFloor].coordinates[id] = { x, y };
@@ -340,15 +341,29 @@ const handleRunSubmit = async ({ values, iterations, runName }) => {
   
 )}
 {showCoordModal && (
-  <CoordinateModal status={status}
-    onSubmit={(coordId) => {
-      const updated = structuredClone(data);
-      updated.houses[selectedHouse].floors[selectedFloor].coordinates[coordId] = pendingPos;
-      setData(updated);
-      setShowCoordModal(false);
-    }}
-    onClose={() => setShowCoordModal(false)}
-  />
+  <CoordinateModal
+  onSubmit={(coordIds) => {
+    const updated = structuredClone(data);
+
+    coordIds.forEach((coordId, index) => {
+      const offset = 20; 
+      const dx = Math.floor((Math.random() - 0.5) * offset * 2);
+      const dy = Math.floor((Math.random() - 0.5) * offset * 2);
+
+      updated.houses[selectedHouse]
+        .floors[selectedFloor]
+        .coordinates[coordId] = {
+          x: pendingPos.x + dx,
+          y: pendingPos.y + dy,
+        };
+    });
+
+    setData(updated);
+    setShowCoordModal(false);
+  }}
+  onClose={() => setShowCoordModal(false)}
+/>
+
 )}
 {showRunModal && (
   <RunScenarioModal

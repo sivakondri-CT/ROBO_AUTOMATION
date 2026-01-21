@@ -2,9 +2,61 @@ import React, { useEffect, useState } from "react";
 import "../styles/upload.css";
 import logo from "../assets/candela.png";
 
+const isFixedGoal = (goal) =>
+  typeof goal === "string" && /^\d+$/.test(goal);
+
+const findNearestWaypoint = (rx, ry, waypoints) => {
+  let nearest = null;
+  let minDist = Infinity;
+
+  waypoints.forEach(wp => {
+    const dx = rx - wp.pose.x;
+    const dy = ry - wp.pose.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+
+    if (d < minDist) {
+      minDist = d;
+      nearest = wp.name;
+    }
+  });
+
+  return minDist < 0.05 ? nearest : null;
+};
+
+
 export default function GlobalHeader({ onStop, onCharge, showLogs, onToggleLogs }) {
   const [battery, setBattery] = useState(null);
   const [nav, setNav] = useState(null);
+  const [pose, setPose] = useState(null);
+
+  const [displayGoal, setDisplayGoal] = useState(null);
+  const [waypoints, setWaypoints] = useState([]);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/robot/waypoints")
+      .then(res => res.json())
+      .then(data => setWaypoints(data.waypoints || []))
+      .catch(() => setWaypoints([]));
+  }, []);
+
+  useEffect(() => {
+  if (!nav) return;
+
+  if (isFixedGoal(nav.goal)) {
+    setDisplayGoal(nav.goal);
+    return;
+  }
+
+  if (pose && waypoints.length > 0) {
+    const nearest = findNearestWaypoint(pose.x, pose.y, waypoints);
+    if (nearest) {
+      setDisplayGoal(nearest);
+      return;
+    }
+  }
+
+}, [nav, pose, waypoints]);
+
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -16,6 +68,11 @@ export default function GlobalHeader({ onStop, onCharge, showLogs, onToggleLogs 
         const nRes = await fetch("http://localhost:8000/robot/nav_status");
         const nData = await nRes.json();
         setNav(nData);
+
+        const aRes = await fetch("http://localhost:8000/robot/pose");
+        const aData = await aRes.json();
+        setPose(aData);
+
       } catch (err) {
         console.error("Status fetch failed", err);
       }
@@ -28,6 +85,8 @@ export default function GlobalHeader({ onStop, onCharge, showLogs, onToggleLogs 
 
   const isReached = nav?.res === 3 && Number(nav?.dist) < 0.5;
   const statusText = isReached ? "Reached" : "Moving";
+  const thetaDeg = pose ? (pose.theta * 180 / Math.PI).toFixed(1) : null;
+
 
   return (
     <div className="upload-header minimal">
@@ -39,11 +98,19 @@ export default function GlobalHeader({ onStop, onCharge, showLogs, onToggleLogs 
           <span className="battery-indicator">⚡🔋 {battery}%</span>
         )}
 
-        {nav && (
-          <span className="robot-status">
-            🤖 {statusText} → 🎯 {nav.goal}
+         {pose && (
+          <span className="robot-angle">
+            Angle :  {thetaDeg}°
           </span>
         )}
+
+        {nav && (
+          <span className="robot-status">
+            🤖 {statusText} → 🎯 {displayGoal ?? "—"}
+          </span>
+        )}
+       
+
         <button className="icon-btn logs" onClick={onToggleLogs}>
   🖥️
 </button>

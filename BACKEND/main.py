@@ -16,6 +16,7 @@ import os
 import config
 import json
 from fastapi import Query, HTTPException
+import math
 
 
 from tasks import run_robo_task
@@ -289,6 +290,43 @@ def get_run_err(run_name: str, lines: int = 200):
 
     return {"lines": content[-lines:]}
 
+def parse_pose_goal(goal_str):
+    try:
+        x, y, theta = map(float, goal_str.split(","))
+        return x, y, theta
+    except Exception:
+        return None
+
+
+def find_nearest_waypoint(rx, ry, waypoints):
+    """
+    rx, ry → robot pose (meters)
+    waypoints → list from /reeman/position or config
+    """
+    nearest_name = None
+    min_dist = float("inf")
+
+    for wp in waypoints:
+        wx = wp["pose"]["x"]
+        wy = wp["pose"]["y"]
+
+        d = math.hypot(rx - wx, ry - wy)
+
+        # DEBUG (optional)
+        # print(f"Checking {wp['name']}: distance = {d:.3f}")
+
+        if d < min_dist:
+            min_dist = d
+            nearest_name = wp["name"]
+
+    return nearest_name, min_dist
+
+
+
+def get_waypoints():
+    return requests.get(
+        "http://192.168.200.187/reeman/position"
+    ).json()["waypoints"]
 
 last_known = {}
 
@@ -303,14 +341,48 @@ def get_robot_pixel(house: str = Query(...), floor: str = Query(...)):
     nav = requests.get("http://localhost:8000/robot/nav_status").json()
     res = nav.get("res")
     dist = float(nav.get("dist", 999))
-    goal = nav.get("goal")
+    incoming_goal = nav.get("goal")
 
-    coord = floor_data["coordinates"].get(goal)
+    coordinates = floor_data["coordinates"]  
+    waypoints = get_waypoints()               
 
     key = (house, floor)
     state = last_known.get(key, {"x": None, "y": None, "goal": None})
 
-    # Reached → update current position
+    goal = None
+
+    # Fixed numeric goal → direct
+    if is_fixed_goal(incoming_goal, coordinates):
+        goal = incoming_goal
+
+    # Pose-based goal → nearest waypoint 
+    else:
+        parsed = parse_pose_goal(incoming_goal)
+        if parsed:
+            rx, ry, _ = parsed
+            nearest, nearest_dist = find_nearest_waypoint(rx, ry, waypoints)
+
+            # EXACT manual rule
+            if nearest_dist == 0:
+                goal = nearest
+            else:
+                goal = state["goal"]
+
+        else:
+            goal = state["goal"]
+
+    coord = coordinates.get(goal) if goal else None
+
+    # Initialize position if missing
+    if coord and state["x"] is None:
+        last_known[key] = {
+            "x": coord["x"],
+            "y": coord["y"],
+            "goal": goal
+        }
+        state = last_known[key]
+
+    # Update only when reached
     if res == 3 and dist < 0.5 and coord:
         last_known[key] = {
             "x": coord["x"],
@@ -324,7 +396,6 @@ def get_robot_pixel(house: str = Query(...), floor: str = Query(...)):
             "y": coord["y"]
         }
 
-    # Moving → keep last known position, but expose target if known
     return {
         "status": "moving",
         "goal": goal,
@@ -333,3 +404,18 @@ def get_robot_pixel(house: str = Query(...), floor: str = Query(...)):
         "targetX": coord["x"] if coord else None,
         "targetY": coord["y"] if coord else None
     }
+
+def is_fixed_goal(goal, coordinates):
+    return isinstance(goal, str) and goal.isdigit() and goal in coordinates
+
+@app.get("/robot/waypoints")
+def get_robot_waypoints():
+    try:
+        res = requests.get(
+            "http://192.168.200.187/reeman/position",
+            timeout=2
+        )
+        data = res.json()
+        return {"waypoints": data.get("waypoints", [])}
+    except Exception as e:
+        return {"waypoints": []}

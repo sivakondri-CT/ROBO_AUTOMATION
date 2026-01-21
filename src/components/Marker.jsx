@@ -7,7 +7,7 @@ import React, { useRef } from "react";
  *  - containerRef (unused directly but kept for future)
  *  - onMove(id, clientX, clientY)
  */
-export default function Marker({ id, x = 0, y = 0, containerRef, onMove }) {
+export default function Marker({ id, x = 0, y = 0, highlighted=false, onMove }) {
   const elRef = useRef(null);
   const draggingRef = useRef(false);
 
@@ -39,7 +39,7 @@ export default function Marker({ id, x = 0, y = 0, containerRef, onMove }) {
   return (
     <div
       ref={elRef}
-      className="marker"
+      className={`marker ${highlighted ? "marker-highlight" : ""}`}
       style={{ left: `${Math.round(x)}px`, top: `${Math.round(y)}px` }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

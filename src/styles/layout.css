@@ -247,7 +247,7 @@ body, html, #root { height: 100%; margin: 0; background: var(--bg); color: #1118
 }
 
 .goto-input {
-  width: 42px;            /* small compact box */
+  width: 42px;            
   padding: 6px 8px;
   border-radius: 6px;
   border: 1px solid rgba(255,255,255,0.25);
@@ -388,3 +388,7 @@ body, html, #root { height: 100%; margin: 0; background: var(--bg); color: #1118
   height: 16px;
   cursor: pointer;
 }
+
+.marker:not(.marker-highlight) {
+  position: absolute; width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(180deg,#ef4444,#dc2626); color: white; display:flex; align-items:center; justify-content:center; font-weight: 700; box-shadow: 0 6px 14px rgba(0,0,0,0.18); border: 2px solid #fff; cursor: grab; user-select: none; touch-action: none; transform: translate(-0%, -0%); }
+

@@ -47,6 +47,11 @@ export default function GlobalHeader({ onStop, onCharge, showLogs, onToggleLogs 
     return;
   }
 
+//   if (nav.goal && displayGoal === null) {
+//   setDisplayGoal(nav.goal);
+// }
+
+
   if (pose && waypoints.length > 0) {
     const nearest = findNearestWaypoint(pose.x, pose.y, waypoints);
     if (nearest) {
@@ -56,7 +61,6 @@ export default function GlobalHeader({ onStop, onCharge, showLogs, onToggleLogs 
   }
 
 }, [nav, pose, waypoints]);
-
 
   useEffect(() => {
     const fetchStatus = async () => {

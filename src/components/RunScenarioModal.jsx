@@ -2,11 +2,25 @@ import React, { useState,useEffect } from "react";
 export default function RunScenarioModal({ order, coordinates,selectedScenario, onSubmit, onClose,onSave }) {
   const [cycleEnabled,setCycleEnabled]=useState(false);
   const uniqueOrder = [...new Set(order)];
+
+  const [customEnabled, setCustomEnabled] = useState(false);
+  const [customOrderText, setCustomOrderText] = useState("");
+  
+  const parseCustomOrder = (text) =>
+  text
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const baseOrder = customEnabled
+  ? parseCustomOrder(customOrderText)
+  : order;
+
   const applyCycle = (order, enabled) => {
   if (!enabled || order.length <= 1) return order;
   return [...order, ...order.slice(0, -1).reverse()];
 };
-  const finalOrder = applyCycle(order, cycleEnabled);
+  const finalOrder = applyCycle(baseOrder, cycleEnabled);
   const [values, setValues] = useState(() =>
     order.reduce((acc, id,index) => {
       acc[index] = {
@@ -138,6 +152,28 @@ console.log("Unique Order:", uniqueOrder);
             <span>Cycle</span>
           </label>
         </div>
+        <div className="cycle-item">
+  <label className="cycle-label">
+    <input
+      type="checkbox"
+      checked={customEnabled}
+      onChange={e => setCustomEnabled(e.target.checked)}
+    />
+    <span>Custom</span>
+  </label>
+</div>
+{customEnabled && (
+  <div className="custom-order-row">
+    <label>Custom Coordinate Order</label>
+    <input
+      type="text"
+      placeholder="Example: 7,6,3"
+      value={customOrderText}
+      onChange={e => setCustomOrderText(e.target.value)}
+    />
+  </div>
+)}
+
       </div>
 
         <div className="modal-actions1">

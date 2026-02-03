@@ -50,9 +50,11 @@ Installed automatically via `requirements.txt`
 ## Python Virtual Environment
 
 ### Step 1: Create & Activate venv
-
+```
 python3 -m venv venv
 source venv/bin/activate
+```
+
 
 
 > ⚠️ Keep the virtual environment active for **Backend & Celery**

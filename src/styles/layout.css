@@ -121,7 +121,15 @@ body, html, #root { height: 100%; margin: 0; background: var(--bg); color: #1118
   color: white;
   font-size: 14px;
   outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
+.selector-with-btn select option {
+  background: #1f2937;   /* dark background */
+  color: white;
+}
+
 
 
 .circle-add-btn {

@@ -42,22 +42,24 @@ export default function GlobalHeader({ onStop, onCharge, showLogs, onToggleLogs 
   useEffect(() => {
   if (!nav) return;
 
+  // 1) Fixed numeric goal (scenario coords)
   if (isFixedGoal(nav.goal)) {
     setDisplayGoal(nav.goal);
     return;
   }
 
-//   if (nav.goal && displayGoal === null) {
-//   setDisplayGoal(nav.goal);
-// }
-
-
+  // 2) Try nearest waypoint by pose
   if (pose && waypoints.length > 0) {
     const nearest = findNearestWaypoint(pose.x, pose.y, waypoints);
     if (nearest) {
       setDisplayGoal(nearest);
       return;
     }
+  }
+
+  // 3) Fallback: raw nav goal
+  if (nav.goal) {
+    setDisplayGoal(nav.goal);
   }
 
 }, [nav, pose, waypoints]);
@@ -110,7 +112,7 @@ export default function GlobalHeader({ onStop, onCharge, showLogs, onToggleLogs 
 
         {nav && (
           <span className="robot-status">
-            🤖 {statusText} → 🎯 {displayGoal ?? "—"}
+            🤖 {statusText} → 🎯 {displayGoal ?? "Charging station"}
           </span>
         )}
        

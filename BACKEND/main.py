@@ -323,10 +323,14 @@ def find_nearest_waypoint(rx, ry, waypoints):
 
 
 
+# def get_waypoints():
+#     return requests.get(
+#         "http://192.168.200.187/reeman/position"
+#     ).json()["waypoints"]
+
 def get_waypoints():
-    return requests.get(
-        "http://192.168.200.187/reeman/position"
-    ).json()["waypoints"]
+    data = get("/reeman/position")
+    return data.get("waypoints", [])
 
 last_known = {}
 
@@ -411,11 +415,7 @@ def is_fixed_goal(goal, coordinates):
 @app.get("/robot/waypoints")
 def get_robot_waypoints():
     try:
-        res = requests.get(
-            "http://192.168.200.187/reeman/position",
-            timeout=2
-        )
-        data = res.json()
+        data = get("/reeman/position")
         return {"waypoints": data.get("waypoints", [])}
-    except Exception as e:
+    except Exception:
         return {"waypoints": []}

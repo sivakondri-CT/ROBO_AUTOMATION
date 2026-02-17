@@ -12,7 +12,7 @@ class RobotClass:
 
     """
 
-    def __init__(self, robo_ip=None, angle_list=None):
+    def __init__(self, robo_ip=None, angle_list=None,min_battery=20,max_battery=100,time_to_reach=60):
         """
         Initialize robot parameters and fetch waypoint data.
 
@@ -32,6 +32,10 @@ class RobotClass:
         self.runtime_dir = None
         self.ip = None
         self.testname = None
+        self.min_battery=min_battery
+        self.max_battery=max_battery
+        self.time_to_reach=time_to_reach
+
 
         # Create waypoint list on initialization
         if self.robo_ip is not None:
@@ -104,11 +108,12 @@ class RobotClass:
         while True:
             try:
                 response = requests.get(battery_url, timeout=5)
+                print("battery response",response.text)
                 response.raise_for_status()
                 data = response.json()
                 battery = data.get("battery", 0)
                 retries = 0
-                if battery <= 20:
+                if battery <= self.min_battery:
                     pause = True
                     if stop is not None:
                         stop()
@@ -152,11 +157,12 @@ class RobotClass:
                         if current_time - last_battery_check >= 300:
                             try:
                                 resp = requests.get(battery_url, timeout=5)
+                                print("battery response loop",resp.text)
                                 resp.raise_for_status()
                                 charge_data = resp.json()
                                 new_battery = charge_data.get("battery", 0)
                                 logging.info("Current battery: {}%".format(new_battery))
-                                if new_battery > 99:
+                                if new_battery > self.max_battery:
                                     logging.info("Battery full. Resuming test...")
                                     return pause, stopped
                             except Exception as e:
@@ -186,7 +192,14 @@ class RobotClass:
         abort = False
         moverobo_url = 'http://' + self.robo_ip + '/cmd/nav_name'
         status_url = 'http://' + self.robo_ip + '/reeman/nav_status'
-        requests.post(moverobo_url, json={"point": coord})
+        try:
+            response = requests.post(moverobo_url, json={"point": coord})
+            response.raise_for_status()
+            logging.info("Move command sent successfully")
+        except requests.exceptions.RequestException as e:
+            logging.info("Error occurred:", e)
+        
+        time.sleep(5)
         if self.nav_data_path:
             with open(self.nav_data_path, 'r') as x:
                 navdata = json.load(x)
@@ -204,10 +217,17 @@ class RobotClass:
 
         retries = 0
         logging.info("Moving to point {}".format(coord))
+        prev_x, prev_y = None, None
+        last_movement_time = time.time()
+        movement_timeout = self.time_to_reach
+        movement_threshold = 0.05
+        second_check=False
+
         while True:
             matched = False
             try:
                 response = requests.get(status_url, timeout=5)
+                x_coord,y_coord=self.get_robot_pose()
                 response.raise_for_status()
                 nav_status = response.json()
             except (requests.RequestException, ValueError) as e:
@@ -228,6 +248,31 @@ class RobotClass:
             if goal == coord and state == 3 and distance < 0.5:
                 matched = True
                 break
+
+            current_time = time.time()
+
+            if prev_x is not None and prev_y is not None:
+                movement = math.sqrt((x_coord - prev_x) ** 2 + (y_coord - prev_y) ** 2)
+                # print("movementtt",movement)
+                if movement > movement_threshold:
+                    last_movement_time = current_time
+
+            prev_x, prev_y = x_coord, y_coord
+
+            if current_time - last_movement_time > movement_timeout:
+                if second_check:
+                    logging.info("Robot appears stuck. No movement detected.")
+                    matched=False
+                    return matched,abort
+                else:
+                    try:
+                        response = requests.post(moverobo_url, json={"point": coord})
+                        response.raise_for_status()
+                        logging.info("Move command sent successfully")
+                    except requests.exceptions.RequestException as e:
+                        logging.info("Error occurred:", e)
+                    second_check=True
+                    continue
 
         # Store the coordinate in navdatajson only from webui
         if self.nav_data_path:
@@ -323,3 +368,20 @@ class RobotClass:
                 angle += 360
             result.append(round(math.radians(angle), 2))
         return result
+
+    def get_robot_pose(self):
+        pose_url = f"http://{self.robo_ip}/reeman/pose"
+
+        try:
+            response = requests.get(pose_url, timeout=5)
+            response.raise_for_status()
+            data_pose = response.json()
+
+            x = data_pose.get("x", 0)
+            y = data_pose.get("y", 0)
+
+            return x, y
+
+        except Exception as e:
+            logging.error("Failed to get robot pose: %s", e)
+            return 0,0

@@ -48,10 +48,14 @@ def main():
 
     parser.add_argument('--robot_ip',required=True,help='hostname for where Robot server is running')
     parser.add_argument("--coordinate_data",required=True,help="JSON string containing coordinate data")
+    parser.add_argument("--min_battery",type=int,default=20,help="Minimum battery level (default: 20)")
+    parser.add_argument("--max_battery",type=int,default=100,help="Maximum battery level (default: 100)")
+    parser.add_argument("--timeout",type=int,default=60,help="Timeout for robot actions in seconds (default: 30)")
     parser.add_argument("--iterations",type=int,default=1,help="Number of times to iterate through coordinates (default: 1)"
     )
     args = parser.parse_args()
-    robot = RobotClass(robo_ip=args.robot_ip)
+    print("args are given below",args)
+    robot = RobotClass(robo_ip=args.robot_ip,min_battery=args.min_battery,max_battery=args.max_battery,time_to_reach=args.timeout)
     try:
         coordinate_data = json.loads(args.coordinate_data)
     except json.JSONDecodeError as e:
@@ -89,7 +93,7 @@ def main():
             else:
                 rotation = rotation.split(",")
 
-            logging.info("rotation", rotation)
+            logging.info(f"rotation {rotation}")
             duration = data.get("duration", 0)
             if duration!=0:
                 duration =duration_to_seconds(duration)

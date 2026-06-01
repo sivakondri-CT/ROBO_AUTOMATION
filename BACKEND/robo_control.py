@@ -49,8 +49,8 @@ def main():
     parser.add_argument('--robot_ip',required=True,help='hostname for where Robot server is running')
     parser.add_argument("--coordinate_data",required=True,help="JSON string containing coordinate data")
     parser.add_argument("--min_battery",type=int,default=20,help="Minimum battery level (default: 20)")
-    parser.add_argument("--max_battery",type=int,default=100,help="Maximum battery level (default: 100)")
-    parser.add_argument("--timeout",type=int,default=60,help="Timeout for robot actions in seconds (default: 30)")
+    parser.add_argument("--max_battery",type=int,default=80,help="Maximum battery level (default: 80)")
+    parser.add_argument("--timeout",type=int,default=60,help="Timeout for robot actions in seconds (default: 60)")
     parser.add_argument("--iterations",type=int,default=1,help="Number of times to iterate through coordinates (default: 1)"
     )
     args = parser.parse_args()
@@ -69,6 +69,9 @@ def main():
     with open(json_path, "w") as f:
         json.dump({"prev": None, "current": None}, f)
     for iteration in range(args.iterations):
+        logging.info(
+            f"Starting iteration {iteration + 1}/{args.iterations}"
+        )
         if is_stopped(json_path):
             logging.info("Test is stopped by user")
             break
@@ -131,6 +134,9 @@ def main():
                         
         if abort_all:
             break
+        logging.info(
+            f"Completed iteration {iteration + 1}/{args.iterations}"
+        )
     with open(json_path, "w") as f:
         json.dump({}, f)
     logging.info("Test completed")

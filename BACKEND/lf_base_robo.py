@@ -12,7 +12,7 @@ class RobotClass:
 
     """
 
-    def __init__(self, robo_ip=None, angle_list=None,min_battery=20,max_battery=100,time_to_reach=60):
+    def __init__(self, robo_ip=None, angle_list=None,min_battery=20,max_battery=80,time_to_reach=60):
         """
         Initialize robot parameters and fetch waypoint data.
 
@@ -162,8 +162,8 @@ class RobotClass:
                                 charge_data = resp.json()
                                 new_battery = charge_data.get("battery", 0)
                                 logging.info("Current battery: {}%".format(new_battery))
-                                if new_battery > self.max_battery:
-                                    logging.info("Battery full. Resuming test...")
+                                if new_battery >= self.max_battery:
+                                    logging.info("Reached maximum battery level. Resuming test...")
                                     return pause, stopped
                             except Exception as e:
                                 logging.info("[ERROR] Checking charge: {}".format(e))
